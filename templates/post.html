@@ -1,0 +1,40 @@
+{% extends "layout.html" %}
+
+{% block title %}{{title}}{% endblock %}
+
+{% block meta_data %}
+<meta property="og:title" content="{{Title}} - Thea Flowers">
+
+{% if post.description %}
+<meta property="og:description" content="{{Summary}}">
+{% endif %}
+
+{% if post.preview_image %}
+<meta property="og:image" content="https://blog.thea.codes/static/{{post.preview_image}}">
+{% else %}
+<meta property="og:image" content="https://blog.thea.codes/static/me.png">
+{% endif %}
+
+{% if post.preview_image_alt %}
+<meta name="twitter:image:alt" content="{{post.preview_image_alt}}">
+{% else %}
+<meta name="twitter:image:alt" content="Avatar for Thea Flowers">
+{% endif %}
+
+<meta property="og:url" content="https://blog.thea.codes/{{slug}}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@theavalkyrie">
+{% endblock %}
+
+{% block content %}
+<article>
+  <aside>
+    <time>{{Date}}</time>
+    · <a href="/">view all posts</a>
+  </aside>
+  <h1>{{title}}</h1>
+  <content>
+    {{content}}
+  </content>
+</article>
+{% endblock %}
