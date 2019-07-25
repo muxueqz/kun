@@ -4,14 +4,7 @@
 <nav>
   <h1>My blog posts</h1>
   <dl class="posts-list">
-  {% for post in posts if not post.get('hidden') %}
-    <a href="/{{post.stem}}">
-      <dt>{{post.title}}</dt>
-      <dd>
-        <time>{{post['date'].strftime('%B %d, %Y')}}</time>
-      </dd>
-    </a>
-  {% endfor %}
+    {{content}}
   </dl>
 </nav>
 {% endblock %}
