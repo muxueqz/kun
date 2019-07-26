@@ -50,16 +50,21 @@ proc write_posts(): seq[JsonNode] =
         # posts.append(post)
       result.add post
 
+proc myCmp(x, y: JsonNode): int =
+# proc myCmp(x, y: T): int =
+  if x < y: -1 else: 1
+  # if x["Date"].getStr < y["Date"].getStr: -1 else: 1
+
 proc write_index(posts: seq[JsonNode]) =
     # posts = sorted(posts, key=lambda post: post['date'], reverse=True)
     var
       seq_post : seq[string]
       p: string
-      post_array: seq[JsonNode]
       post_tables = initOrderedTable[string, JsonNode]()
     for post in posts:
       post_tables.add(post["Date"].getStr, post)
-    post_tables.sort(system.cmp, order = SortOrder.Descending)
+    # post_tables.sort(system.cmp, order = SortOrder.Descending)
+    post_tables.sort(myCmp, order = SortOrder.Descending)
 
     for key, post in post_tables:
       p = """
