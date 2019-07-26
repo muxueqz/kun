@@ -5,15 +5,11 @@ import pegs
 import nwt, json
 import markdown
 import algorithm
+import times
 
 var templates = newNwt("templates/*.html") # we have all the templates in a folder called "templates"
 
 proc write_post(post: JsonNode)=
-    # if post.get('legacy_url'):
-        # path = pathlib.Path("./docs/{}/index.html".format(post['stem']))
-        # path.parent.mkdir(parents=True, exist_ok=True)
-    # else:
-        # path = pathlib.Path("./docs/{}.html".format(post['stem']))
     var content = templates.renderTemplate("post.html", post)
     
     writeFile("public/" & post["Slug"].getStr & ".html", content)
@@ -50,21 +46,20 @@ proc write_posts(): seq[JsonNode] =
         # posts.append(post)
       result.add post
 
-proc myCmp(x, y: JsonNode): int =
-# proc myCmp(x, y: T): int =
-  if x < y: -1 else: 1
-  # if x["Date"].getStr < y["Date"].getStr: -1 else: 1
+proc date_cmp(x, y: JsonNode): int =
+  var
+    a = parse(x["Date"].getStr, "yyyy-MM-dd HH:mm")
+    b = parse(y["Date"].getStr, "yyyy-MM-dd HH:mm")
+  if a < b: -1 else: 1
 
 proc write_index(posts: seq[JsonNode]) =
-    # posts = sorted(posts, key=lambda post: post['date'], reverse=True)
     var
       seq_post : seq[string]
       p: string
-      post_tables = initOrderedTable[string, JsonNode]()
+      post_tables: seq[JsonNode]
     for post in posts:
-      post_tables.add(post["Date"].getStr, post)
-    # post_tables.sort(system.cmp, order = SortOrder.Descending)
-    post_tables.sort(myCmp, order = SortOrder.Descending)
+      post_tables.add post
+    post_tables.sort(date_cmp, order = SortOrder.Descending)
 
     for key, post in post_tables:
       p = """
