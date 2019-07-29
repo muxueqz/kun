@@ -4,6 +4,7 @@
 
 {% block meta_data %}
 <meta property="og:title" content="{{Title}} - Thea Flowers">
+<meta property="og:tags" content="{{Tags}}">
 
 {% if post.description %}
 <meta property="og:description" content="{{Summary}}">
@@ -30,6 +31,7 @@
 <article>
   <aside>
     <time>{{Date}}</time>
+    Tags: {{tag_links}}
     · <a href="/">view all posts</a>
   </aside>
   <h1>{{title}}</h1>

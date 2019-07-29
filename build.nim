@@ -12,7 +12,23 @@ import packages/docutils/rstgen , strtabs
 var templates = newNwt("templates/*.html") # we have all the templates in a folder called "templates"
 
 proc write_post(post: JsonNode)=
-    var content = templates.renderTemplate("post.html", post)
+    var
+      p: string
+      new_post = initTable[string, string]()
+    new_post["Tags"] = ""
+    for k, v in post:
+      new_post[k] = v.getStr
+    new_post["tag_links"] = ""
+    if "Tags" in post:
+      for tag in post["Tags"].getStr.split(","):
+        p = """
+        <a href="/tags/$1.html">
+        $1
+        </a>
+        """ % tag.strip()
+        new_post["tag_links"].add p
+    var json_post = %* new_post
+    var content = templates.renderTemplate("post.html", json_post)
     
     writeFile("public/" & post["Slug"].getStr & ".html", content)
 
