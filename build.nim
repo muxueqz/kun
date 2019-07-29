@@ -149,9 +149,13 @@ proc sort_posts(posts: seq[JsonNode]): seq[JsonNode] =
 proc write_index(posts: seq[JsonNode]) =
     var
       seq_post : seq[string]
-      p: string
+      p, summary: string
 
     for key, post in posts:
+      if "Summary" in post:
+        summary = post["Summary"].getStr
+      else:
+        summary = ""
       p = """
     <a href="/$1.html">
       <dt>$2</dt>
@@ -159,10 +163,14 @@ proc write_index(posts: seq[JsonNode]) =
         <time>$3</time>
       </dd>
     </a>
+    <div class="summary">
+    $4
+    </div>
     """ % [
           post["Slug"].getStr,
           post["Title"].getStr,
           post["Date"].getStr,
+          summary,
           ]
       seq_post.add p
 
