@@ -149,7 +149,8 @@ proc sort_posts(posts: seq[JsonNode]): seq[JsonNode] =
 proc write_index(posts: seq[JsonNode]) =
     var
       seq_post : seq[string]
-      p, summary: string
+      tags = initCountTable[string]()
+      p, summary, tag_cloud: string
 
     for key, post in posts:
       if "Summary" in post:
@@ -173,6 +174,18 @@ proc write_index(posts: seq[JsonNode]) =
           summary,
           ]
       seq_post.add p
+      if "Tags" in post:
+        for tag in post["Tags"].getStr.split(","):
+          tags.inc tag.strip()
+
+    for tag, count in tags:
+      p = """
+      <a href="/tags/$1.html">
+      $1
+      </a>
+      """ % tag
+      tag_cloud.add p
+    seq_post.add tag_cloud
 
     var index_post = %* {
         "content": seq_post.join("\n")
