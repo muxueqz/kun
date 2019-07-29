@@ -114,27 +114,14 @@ proc rst_processor(file_path: string): JsonNode =
 
 proc write_posts(): seq[JsonNode] = 
   for file in walkDirRec "./srcs/":
-    # if file.endsWith ".md" or file.endsWith ".rst":
     var
       file_meta = splitFile(file)
       post: JsonNode
-    echo file
-    case file_meta.ext:
-    of ".md":
+    if file.endsWith ".md":
+      echo file
       post = md_processor(file)
-    of ".rst":
-      echo "rst is not supported"
-      post = %* {
-              "Date":"2001-01-01 01:00",
-              "Slug":"null",
-              "Title":"null",
-                }
-      # post = rst_processor(file)
-    else:                   echo "unknown command"
-        # post['stem'] = source.stem
-    # if post:
-    write_post(post)
-    result.add post
+      write_post(post)
+      result.add post
 
 proc date_cmp(x, y: JsonNode): int =
   var
