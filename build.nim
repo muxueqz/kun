@@ -113,10 +113,9 @@ proc rst_processor(file_path: string): JsonNode =
   result = %* post
 
 proc write_posts(): seq[JsonNode] = 
+  var
+    post: JsonNode
   for file in walkDirRec "./srcs/":
-    var
-      file_meta = splitFile(file)
-      post: JsonNode
     if file.endsWith ".md":
       echo file
       post = md_processor(file)
@@ -159,8 +158,48 @@ proc write_index(posts: seq[JsonNode]) =
     var content = templates.renderTemplate("index.html", index_post)
     
     writeFile("public/" & "index.html", content)
-#
-#
+
+proc write_tags(posts: seq[JsonNode]) =
+    var
+      post_tags = initTable[string, string]()
+      p: string
+      post_tables: seq[JsonNode]
+      tag: string
+    for post in posts:
+      post_tables.add post
+    post_tables.sort(date_cmp, order = SortOrder.Descending)
+
+    for _, post in post_tables:
+      if "Tags" in post:
+        p = """
+      <a href="/$1.html">
+        <dt>$2</dt>
+        <dd>
+          <time>$3</time>
+        </dd>
+      </a>
+      """ % [
+            post["Slug"].getStr,
+            post["Title"].getStr,
+            post["Date"].getStr,
+            ]
+        for t_tag in post["Tags"].getStr.split(","):
+          tag = t_tag.strip()
+          if tag in post_tags:
+            post_tags[tag].add p
+          else:
+            post_tags[tag] = p
+
+    for tag, post in post_tags:
+      var index_post = %* {
+          "content": post,
+          "tag_name": tag,
+        }
+      var content = templates.renderTemplate("tags.html", index_post)
+      
+      writeFile("public/tags/" & tag & ".html", content)
+
+
 # def write_rss(posts: Sequence[frontmatter.Post]):
     # posts = sorted(posts, key=lambda post: post['date'], reverse=True)
     # path = pathlib.Path("./docs/feed.xml")
@@ -175,6 +214,7 @@ proc main()=
     posts = write_posts()
   # echo $posts
   write_index(posts)
+  write_tags(posts)
   # write_rss(posts)
 
 
