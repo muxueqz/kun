@@ -6,6 +6,8 @@ import nwt, json
 import markdown
 import algorithm
 import times
+import packages/docutils/rst
+import packages/docutils/rstgen , strtabs
 
 var templates = newNwt("templates/*.html") # we have all the templates in a folder called "templates"
 
@@ -14,7 +16,7 @@ proc write_post(post: JsonNode)=
     
     writeFile("public/" & post["Slug"].getStr & ".html", content)
 
-proc parse_source(file_path: string): JsonNode = 
+proc md_processor(file_path: string): JsonNode = 
   var
     file_meta = splitFile(file_path)
     head = true
@@ -25,26 +27,114 @@ proc parse_source(file_path: string): JsonNode =
 
     if head and line.match(peg"\s* {\w+} \s* ':' \s* {.+}", matches):
       post[matches[0]] = matches[1]
+    elif head and line.strip.len == 0:
+      discard
     else:
       head = false
     if head == false:
       src.add line & "\n"
-  if post.contains"Slug":
+  if not post.contains"Slug":
     post["Slug"] = file_meta.name
   post["content"] = markdown(src)
   result = %* post
 
+proc rstToHtml*(s: string, options: RstParseOptions,
+                config: StringTableRef): string =
+  ## Converts an input rst string into embeddable HTML.
+  ##
+  ## This convenience proc parses any input string using rst markup (it doesn't
+  ## have to be a full document!) and returns an embeddable piece of HTML. The
+  ## proc is meant to be used in *online* environments without access to a
+  ## meaningful filesystem, and therefore rst ``include`` like directives won't
+  ## work. For an explanation of the ``config`` parameter see the
+  ## ``initRstGenerator`` proc. Example:
+  ##
+  ## .. code-block:: nim
+  ##   import packages/docutils/rstgen, strtabs
+  ##
+  ##   echo rstToHtml("*Hello* **world**!", {},
+  ##     newStringTable(modeStyleInsensitive))
+  ##   # --> <em>Hello</em> <strong>world</strong>!
+  ##
+  ## If you need to allow the rst ``include`` directive or tweak the generated
+  ## output you have to create your own ``RstGenerator`` with
+  ## ``initRstGenerator`` and related procs.
+
+  const filen = "input"
+  var d: RstGenerator
+  initRstGenerator(d, outHtml, config, filen, options, nil,
+                   rst.defaultMsgHandler)
+  var dummyHasToc = false
+  var rst = rstParse(s, filen, 0, 1, dummyHasToc, options)
+  # echo rst.getFieldValue("date").strip()
+  result = ""
+  renderRstToOut(d, rst, result)
+  echo d.meta
+
+proc rst_processor(file_path: string): JsonNode = 
+  var
+    file_meta = splitFile(file_path)
+    head = true
+    post = initTable[string, string]()
+    matches: array[0..1, string]
+    src = ""
+  for line in file_path.open().lines:
+
+    if head and not post.hasKey("Title") and "###" notin line:
+      post["Title"] = line
+    elif head and "###" in line:
+      echo line
+    elif head and line.match(peg"':' \s* {\w+} \s* ':' \s* {.+}", matches):
+      echo matches
+      post[matches[0]] = matches[1]
+    elif line.strip.len == 0:
+      discard
+    else:
+      head = false
+    if head == false:
+      src.add line & "\n"
+  if not post.hasKey"slug":
+    post["slug"] = file_meta.name
+  post["Slug"] = post["slug"]
+  if post.hasKey"tags":
+    post["Tags"] = post["tags"]
+  if post.hasKey"Date":
+    post["date"] = post["Date"]
+  # post["Date"] = "2019-07-26 10:00"
+  post["Date"] = post["date"][0..15]
+
+  # src = file_path.open().readAll()
+# echo rstToHtml("*Hello* **world**!", {},
+  post["content"] = rstToHtml(src, {
+      roSkipPounds,
+      roSupportRawDirective}, 
+    newStringTable(modeStyleInsensitive))
+  # post["content"] = markdown(src)
+  result = %* post
+
 proc write_posts(): seq[JsonNode] = 
   for file in walkDirRec "./srcs/":
-    if file.endsWith ".md":
-      echo file
-      var
-        post = parse_source(file)
+    # if file.endsWith ".md" or file.endsWith ".rst":
+    var
+      file_meta = splitFile(file)
+      post: JsonNode
+    echo file
+    case file_meta.ext:
+    of ".md":
+      post = md_processor(file)
+    of ".rst":
+      echo "rst is not supported"
+      post = %* {
+              "Date":"2001-01-01 01:00",
+              "Slug":"null",
+              "Title":"null",
+                }
+      # post = rst_processor(file)
+    else:                   echo "unknown command"
         # post['stem'] = source.stem
-      write_post(post)
-#
-        # posts.append(post)
-      result.add post
+    # if post:
+    write_post(post)
+    result.add post
 
 proc date_cmp(x, y: JsonNode): int =
   var
