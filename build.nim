@@ -128,16 +128,17 @@ proc date_cmp(x, y: JsonNode): int =
     b = parse(y["Date"].getStr, "yyyy-MM-dd HH:mm")
   if a < b: -1 else: 1
 
+proc sort_posts(posts: seq[JsonNode]): seq[JsonNode] = 
+    for post in posts:
+      result.add post
+    result.sort(date_cmp, order = SortOrder.Descending)
+
 proc write_index(posts: seq[JsonNode]) =
     var
       seq_post : seq[string]
       p: string
-      post_tables: seq[JsonNode]
-    for post in posts:
-      post_tables.add post
-    post_tables.sort(date_cmp, order = SortOrder.Descending)
 
-    for key, post in post_tables:
+    for key, post in posts:
       p = """
     <a href="/$1.html">
       <dt>$2</dt>
@@ -163,13 +164,9 @@ proc write_tags(posts: seq[JsonNode]) =
     var
       post_tags = initTable[string, string]()
       p: string
-      post_tables: seq[JsonNode]
       tag: string
-    for post in posts:
-      post_tables.add post
-    post_tables.sort(date_cmp, order = SortOrder.Descending)
 
-    for _, post in post_tables:
+    for _, post in posts:
       if "Tags" in post:
         p = """
       <a href="/$1.html">
@@ -212,6 +209,7 @@ proc main()=
   # echo 1
   var
     posts = write_posts()
+  posts = sort_posts(posts)
   # echo $posts
   write_index(posts)
   write_tags(posts)
