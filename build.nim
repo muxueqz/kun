@@ -1,5 +1,4 @@
 import os, times, strutils, osproc, streams
-# import moustachu
 import tables
 import pegs
 import nwt, json
@@ -115,17 +114,15 @@ proc rst_processor(file_path: string): JsonNode =
   if post.hasKey"tags":
     post["Tags"] = post["tags"]
   if post.hasKey"Date":
-    post["date"] = post["Date"]
   # post["Date"] = "2019-07-26 10:00"
+    post["date"] = post["Date"]
   post["Date"] = post["date"][0..15]
 
   # src = file_path.open().readAll()
-# echo rstToHtml("*Hello* **world**!", {},
   post["content"] = rstToHtml(src, {
       roSkipPounds,
       roSupportRawDirective}, 
     newStringTable(modeStyleInsensitive))
-  # post["content"] = markdown(src)
   result = %* post
 
 proc write_posts(): seq[JsonNode] = 
@@ -228,6 +225,8 @@ proc main()=
   posts = sort_posts(posts)
   # echo $posts
   write_index(posts)
+  # TODO
+  # write_archive(posts)
   write_tags(posts)
   # write_rss(posts)
 
