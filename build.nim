@@ -50,6 +50,11 @@ proc md_processor(file_path: string): JsonNode =
       src.add line & "\n"
   if not post.contains"Slug":
     post["Slug"] = file_meta.name
+  if "Category" in post:
+    if "Tags" in post:
+      post["Tags"].add "," & post["Category"]
+    else:
+      post["Tags"] = post["Category"]
   post["content"] = markdown(src)
   result = %* post
 
