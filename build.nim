@@ -8,7 +8,7 @@ import times
 import packages/docutils/rst
 import packages/docutils/rstgen , strtabs
 
-var templates = newNwt("templates/*.html") # we have all the templates in a folder called "templates"
+var templates = newNwt("templates/*.*ml") # we have all the templates in a folder called "templates"
 
 proc write_post(post: JsonNode)=
     var
@@ -199,6 +199,46 @@ proc write_index(posts: seq[JsonNode]) =
     
     writeFile("public/" & "index.html", content)
 
+proc write_rss(posts: seq[JsonNode]) =
+    var
+      seq_post : seq[string]
+      tags = initCountTable[string]()
+      p, summary, tag_cloud: string
+      site_root = "https://muxueqz.coding.me"
+
+    for key, post in posts:
+      if "Summary" in post:
+        summary = post["Summary"].getStr
+      else:
+        summary = ""
+    # <pubDate>{{ post.date.strftime("%a, %d %b %Y 12:00:00 Z") }}</pubDate>
+      p = """
+  <item>
+    <title>$2</title>
+    <link>$5/$1.html</link>
+    <guid>$5/$1.html</guid>
+    <pubDate>$3</pubDate>
+  </item>
+    """ % [
+          post["Slug"].getStr,
+          post["Title"].getStr,
+          post["Date"].getStr,
+          summary,
+          site_root,
+          ]
+      seq_post.add p
+      if "Tags" in post:
+        for tag in post["Tags"].getStr.split(","):
+          tags.inc tag.strip()
+
+    var index_post = %* {
+        "content": seq_post.join("\n"),
+        "root": site_root,
+      }
+    var content = templates.renderTemplate("rss.xml", index_post)
+    
+    writeFile("public/" & "feed.xml", content)
+
 proc write_tags(posts: seq[JsonNode]) =
     var
       post_tags = initTable[string, string]()
@@ -236,16 +276,7 @@ proc write_tags(posts: seq[JsonNode]) =
       writeFile("public/tags/" & tag & ".html", content)
 
 
-# def write_rss(posts: Sequence[frontmatter.Post]):
-    # posts = sorted(posts, key=lambda post: post['date'], reverse=True)
-    # path = pathlib.Path("./docs/feed.xml")
-    # template = jinja_env.get_template('rss.xml')
-    # rendered = template.render(posts=posts, root="https://blog.thea.codes")
-    # path.write_text(rendered)
-
 proc main()= 
-  # write_pygments_style_sheet()
-  # echo 1
   var
     posts = write_posts()
   posts = sort_posts(posts)
@@ -254,7 +285,7 @@ proc main()=
   # TODO
   # write_archive(posts)
   write_tags(posts)
-  # write_rss(posts)
+  write_rss(posts)
 
 
 main()
