@@ -3,7 +3,7 @@
 {% block title %}{{title}}{% endblock %}
 
 {% block meta_data %}
-<meta property="og:title" content="{{Title}} - Thea Flowers">
+<meta property="og:title" content="{{Title}} - QingZhuo Blog">
 <meta property="og:tags" content="{{Tags}}">
 
 {% if post.description %}
@@ -11,20 +11,20 @@
 {% endif %}
 
 {% if post.preview_image %}
-<meta property="og:image" content="https://blog.thea.codes/static/{{post.preview_image}}">
+<meta property="og:image" content="https://muxueqz.coding.me/static/{{post.preview_image}}">
 {% else %}
-<meta property="og:image" content="https://blog.thea.codes/static/me.png">
+<meta property="og:image" content="https://muxueqz.coding.me/static/me.png">
 {% endif %}
 
 {% if post.preview_image_alt %}
 <meta name="twitter:image:alt" content="{{post.preview_image_alt}}">
 {% else %}
-<meta name="twitter:image:alt" content="Avatar for Thea Flowers">
+<meta name="twitter:image:alt" content="Avatar for muxueqz">
 {% endif %}
 
-<meta property="og:url" content="https://blog.thea.codes/{{slug}}">
+<meta property="og:url" content="https://muxueqz.coding.me/{{slug}}">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:site" content="@theavalkyrie">
+<meta name="twitter:site" content="@muxueqz">
 {% endblock %}
 
 {% block content %}
