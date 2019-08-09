@@ -1,5 +1,6 @@
 import os, times, strutils, osproc, streams
 import tables
+import sequtils
 import pegs
 import nwt, json
 import markdown
@@ -36,6 +37,7 @@ proc md_processor(file_path: string): JsonNode =
     post = initTable[string, string]()
     matches: array[0..1, string]
     src = ""
+    tags = initCountTable[string]()
   for line in file_path.open().lines:
 
     if head and line.match(peg"\s* {\w+} \s* ':' \s* {.+}", matches):
@@ -53,6 +55,12 @@ proc md_processor(file_path: string): JsonNode =
       post["Tags"].add "," & post["Category"]
     else:
       post["Tags"] = post["Category"]
+
+  if "Tags" in post:
+    for tag in post["Tags"].split(","):
+      tags.inc tag.strip()
+
+    post["Tags"] = toSeq(tags.keys()).join(",")
   post["content"] = markdown(src)
   result = %* post
 
@@ -128,7 +136,6 @@ proc write_index(posts: seq[JsonNode]) =
 proc write_rss(posts: seq[JsonNode]) =
     var
       seq_post : seq[string]
-      tags = initCountTable[string]()
       p, summary, tag_cloud: string
       site_root = "https://muxueqz.coding.me"
 
@@ -153,9 +160,6 @@ proc write_rss(posts: seq[JsonNode]) =
           site_root,
           ]
       seq_post.add p
-      if "Tags" in post:
-        for tag in post["Tags"].getStr.split(","):
-          tags.inc tag.strip()
 
     var index_post = %* {
         "content": seq_post.join("\n"),
@@ -185,8 +189,7 @@ proc write_tags(posts: seq[JsonNode]) =
             post["Title"].getStr,
             post["Date"].getStr,
             ]
-        for t_tag in post["Tags"].getStr.split(","):
-          tag = t_tag.strip()
+        for tag in post["Tags"].getStr.split(","):
           if tag in post_tags:
             post_tags[tag].add p
           else:
