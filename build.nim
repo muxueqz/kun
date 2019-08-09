@@ -136,7 +136,7 @@ proc write_index(posts: seq[JsonNode]) =
 proc write_rss(posts: seq[JsonNode]) =
     var
       seq_post : seq[string]
-      p, summary, tag_cloud: string
+      p, summary: string
       site_root = "https://muxueqz.coding.me"
 
     for key, post in posts:
@@ -173,7 +173,6 @@ proc write_tags(posts: seq[JsonNode]) =
     var
       post_tags = initTable[string, string]()
       p: string
-      tag: string
 
     for _, post in posts:
       if "Tags" in post:
