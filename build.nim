@@ -5,8 +5,6 @@ import nwt, json
 import markdown
 import algorithm
 import times
-import packages/docutils/rst
-import packages/docutils/rstgen , strtabs
 
 var templates = newNwt("templates/*.*ml") # we have all the templates in a folder called "templates"
 
@@ -56,78 +54,6 @@ proc md_processor(file_path: string): JsonNode =
     else:
       post["Tags"] = post["Category"]
   post["content"] = markdown(src)
-  result = %* post
-
-proc rstToHtml*(s: string, options: RstParseOptions,
-                config: StringTableRef): string =
-  ## Converts an input rst string into embeddable HTML.
-  ##
-  ## This convenience proc parses any input string using rst markup (it doesn't
-  ## have to be a full document!) and returns an embeddable piece of HTML. The
-  ## proc is meant to be used in *online* environments without access to a
-  ## meaningful filesystem, and therefore rst ``include`` like directives won't
-  ## work. For an explanation of the ``config`` parameter see the
-  ## ``initRstGenerator`` proc. Example:
-  ##
-  ## .. code-block:: nim
-  ##   import packages/docutils/rstgen, strtabs
-  ##
-  ##   echo rstToHtml("*Hello* **world**!", {},
-  ##     newStringTable(modeStyleInsensitive))
-  ##   # --> <em>Hello</em> <strong>world</strong>!
-  ##
-  ## If you need to allow the rst ``include`` directive or tweak the generated
-  ## output you have to create your own ``RstGenerator`` with
-  ## ``initRstGenerator`` and related procs.
-
-  const filen = "input"
-  var d: RstGenerator
-  initRstGenerator(d, outHtml, config, filen, options, nil,
-                   rst.defaultMsgHandler)
-  var dummyHasToc = false
-  var rst = rstParse(s, filen, 0, 1, dummyHasToc, options)
-  # echo rst.getFieldValue("date").strip()
-  result = ""
-  renderRstToOut(d, rst, result)
-  echo d.meta
-
-proc rst_processor(file_path: string): JsonNode = 
-  var
-    file_meta = splitFile(file_path)
-    head = true
-    post = initTable[string, string]()
-    matches: array[0..1, string]
-    src = ""
-  for line in file_path.open().lines:
-
-    if head and not post.hasKey("Title") and "###" notin line:
-      post["Title"] = line
-    elif head and "###" in line:
-      echo line
-    elif head and line.match(peg"':' \s* {\w+} \s* ':' \s* {.+}", matches):
-      echo matches
-      post[matches[0]] = matches[1]
-    elif line.strip.len == 0:
-      discard
-    else:
-      head = false
-    if head == false:
-      src.add line & "\n"
-  if not post.hasKey"slug":
-    post["slug"] = file_meta.name
-  post["Slug"] = post["slug"]
-  if post.hasKey"tags":
-    post["Tags"] = post["tags"]
-  if post.hasKey"Date":
-  # post["Date"] = "2019-07-26 10:00"
-    post["date"] = post["Date"]
-  post["Date"] = post["date"][0..15]
-
-  # src = file_path.open().readAll()
-  post["content"] = rstToHtml(src, {
-      roSkipPounds,
-      roSupportRawDirective}, 
-    newStringTable(modeStyleInsensitive))
   result = %* post
 
 proc write_posts(): seq[JsonNode] = 
