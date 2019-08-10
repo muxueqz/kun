@@ -1,26 +1,15 @@
 {% extends "layout.html" %}
 
-{% block title %}{{title}}{% endblock %}
-
 {% block meta_data %}
+<title>{{Title}} - QingZhuo Blog</title>
 <meta property="og:title" content="{{Title}} - QingZhuo Blog">
 <meta property="og:tags" content="{{Tags}}">
 
-{% if post.description %}
 <meta property="og:description" content="{{Summary}}">
-{% endif %}
 
-{% if post.preview_image %}
-<meta property="og:image" content="https://muxueqz.coding.me/static/{{post.preview_image}}">
-{% else %}
 <meta property="og:image" content="https://muxueqz.coding.me/static/me.png">
-{% endif %}
 
-{% if post.preview_image_alt %}
-<meta name="twitter:image:alt" content="{{post.preview_image_alt}}">
-{% else %}
 <meta name="twitter:image:alt" content="Avatar for muxueqz">
-{% endif %}
 
 <meta property="og:url" content="https://muxueqz.coding.me/{{slug}}">
 <meta name="twitter:card" content="summary_large_image">
@@ -29,14 +18,25 @@
 
 {% block content %}
 <article>
+  <h1>{{Title}}</h1>
   <aside>
-    <time>{{Date}}</time>
-    Tags: {{tag_links}}
+    <div id="sub-header">
+      {{Date}}
+    {{tag_links}}
     · <a href="/">view all posts</a>
+    </div>
   </aside>
-  <h1>{{title}}</h1>
   <content>
     {{content}}
   </content>
 </article>
+
+<script src="https://utteranc.es/client.js"
+        repo="muxueqz/muxueqz-blog"
+        issue-term="pathname"
+        theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script>
+
 {% endblock %}
