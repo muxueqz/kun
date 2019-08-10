@@ -20,7 +20,7 @@ proc write_post(post: JsonNode)=
     if "Tags" in post:
       for tag in post["Tags"].getStr.split(","):
         p = """
-        <a href="/tags/$1.html">
+        <a class="label" href="/tags/$1.html">
         $1
         </a>
         """ % tag.strip()
@@ -97,12 +97,12 @@ proc write_index(posts: seq[JsonNode]) =
       else:
         summary = ""
       p = """
-    <a href="/$1.html">
-      <dt>$2</dt>
-      <dd>
-        <time>$3</time>
-      </dd>
-    </a>
+    <h2>
+      <a href="/$1.html"> $2 </a>
+    </h2>
+    <div id=date>
+      <time>$3</time>
+    </div>
     <div class="summary">
     $4
     </div>
@@ -119,15 +119,15 @@ proc write_index(posts: seq[JsonNode]) =
 
     for tag, count in tags:
       p = """
-      <a href="/tags/$1.html">
+      <a class="label" href="/tags/$1.html">
       $1
       </a>
       """ % tag
       tag_cloud.add p
-    seq_post.add tag_cloud
 
     var index_post = %* {
-        "content": seq_post.join("\n")
+        "content": seq_post.join("\n"),
+        "tags": tag_cloud,
       }
     var content = templates.renderTemplate("index.html", index_post)
     
@@ -177,13 +177,13 @@ proc write_tags(posts: seq[JsonNode]) =
     for _, post in posts:
       if "Tags" in post:
         p = """
-      <a href="/$1.html">
-        <dt>$2</dt>
-        <dd>
-          <time>$3</time>
-        </dd>
-      </a>
-      """ % [
+          <h2>
+            <a href="/$1.html"> $2 </a>
+          </h2>
+          <div id=date>
+            <time>$3</time>
+          </div>
+          """ % [
             post["Slug"].getStr,
             post["Title"].getStr,
             post["Date"].getStr,
