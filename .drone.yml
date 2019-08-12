@@ -1,0 +1,44 @@
+---
+kind: pipeline
+name: default
+
+clone:
+  # depth: 1
+  disable: true
+
+steps:
+- name: clone
+  image: docker:git
+  commands:
+  # 下载静态博客构建代码
+  - git clone --depth=1 https://github.com/muxueqz/kun.git
+
+- name: build
+  image: nimlang/nim
+  commands:
+  # 编译静态博客构建工具
+  - nimble install -y nwt markdown
+  - cd kun
+  - nim c -d:release build.nim
+
+# 通过git push部署到git仓库，我用的是国内的coding.net
+- name: git_push
+  image: muxueqz/drone-git-push-by-bash
+  settings:
+    branch: master
+    remote: git@git.coding.net:muxueqz/muxueqz.git
+    force: true
+    commit: true
+    path: ./kun/public
+    ssh_key:
+      from_secret: GIT_PUSH_SSH_KEY
+
+steps:
+- name: publish
+  image: plugins/github-release
+  settings:
+    api_key:
+      from_secret: GITHUB_API_KEY
+    files: build
+  # when:
+    # event: tag
