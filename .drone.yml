@@ -21,24 +21,11 @@ steps:
   - cd kun
   - nim c -d:release build.nim
 
-# 通过git push部署到git仓库，我用的是国内的coding.net
-- name: git_push
-  image: muxueqz/drone-git-push-by-bash
-  settings:
-    branch: master
-    remote: git@git.coding.net:muxueqz/muxueqz.git
-    force: true
-    commit: true
-    path: ./kun/public
-    ssh_key:
-      from_secret: GIT_PUSH_SSH_KEY
-
-steps:
 - name: publish
   image: plugins/github-release
   settings:
     api_key:
       from_secret: GITHUB_API_KEY
     files: build
-  # when:
-    # event: tag
+  when:
+    event: tag
