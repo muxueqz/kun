@@ -27,6 +27,6 @@ steps:
   settings:
     api_key:
       from_secret: GITHUB_API_KEY
-    files: dist/*
+    files: dist/kun
   when:
     event: tag
