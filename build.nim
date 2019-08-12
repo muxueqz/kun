@@ -175,12 +175,12 @@ proc write_sitemap(posts: seq[JsonNode]) =
       p: string
       site_root = "https://muxueqz.coding.me"
 
+  # <lastmod>$2</lastmod>
     for key, post in posts:
-  # <lastmod>2019-08-09T22:48:11+00:00</lastmod>
       p = """
 <url>
   <loc>$3/$1.html</loc>
-  <lastmod>$2</lastmod>
+  <lastmod>2019-08-09T22:48:11+00:00</lastmod>
   <priority>1.00</priority>
 </url>
     """ % [
