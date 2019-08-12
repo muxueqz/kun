@@ -7,7 +7,7 @@ import markdown
 import algorithm
 import times
 
-var templates = newNwt("templates/*.*ml") # we have all the templates in a folder called "templates"
+var templates = newNwt("templates/*.templ") # we have all the templates in a folder called "templates"
 
 proc write_post(post: JsonNode)=
     var
@@ -26,7 +26,7 @@ proc write_post(post: JsonNode)=
         """ % tag.strip()
         new_post["tag_links"].add p
     var json_post = %* new_post
-    var content = templates.renderTemplate("post.html", json_post)
+    var content = templates.renderTemplate("post.templ", json_post)
     
     writeFile("public/" & post["Slug"].getStr & ".html", content)
 
@@ -129,7 +129,7 @@ proc write_index(posts: seq[JsonNode]) =
         "content": seq_post.join("\n"),
         "tags": tag_cloud,
       }
-    var content = templates.renderTemplate("index.html", index_post)
+    var content = templates.renderTemplate("index.templ", index_post)
     
     writeFile("public/" & "index.html", content)
 
@@ -165,9 +165,38 @@ proc write_rss(posts: seq[JsonNode]) =
         "content": seq_post.join("\n"),
         "root": site_root,
       }
-    var content = templates.renderTemplate("rss.xml", index_post)
+    var content = templates.renderTemplate("rss.templ", index_post)
     
     writeFile("public/" & "feed.xml", content)
+
+proc write_sitemap(posts: seq[JsonNode]) =
+    var
+      seq_post : seq[string]
+      p: string
+      site_root = "https://muxueqz.coding.me"
+
+    for key, post in posts:
+  # <lastmod>2019-08-09T22:48:11+00:00</lastmod>
+      p = """
+<url>
+  <loc>$3/$1.html</loc>
+  <lastmod>$2</lastmod>
+  <priority>1.00</priority>
+</url>
+    """ % [
+          post["Slug"].getStr,
+          post["Date"].getStr,
+          site_root,
+          ]
+      seq_post.add p
+
+    var index_post = %* {
+        "content": seq_post.join("\n"),
+        "root": site_root,
+      }
+    var content = templates.renderTemplate("sitemap.templ", index_post)
+    
+    writeFile("public/" & "sitemap.xml", content)
 
 proc write_tags(posts: seq[JsonNode]) =
     var
@@ -199,7 +228,7 @@ proc write_tags(posts: seq[JsonNode]) =
           "content": post,
           "tag_name": tag,
         }
-      var content = templates.renderTemplate("tags.html", index_post)
+      var content = templates.renderTemplate("tags.templ", index_post)
       
       writeFile("public/tags/" & tag & ".html", content)
 
@@ -214,6 +243,7 @@ proc main()=
   # write_archive(posts)
   write_tags(posts)
   write_rss(posts)
+  write_sitemap(posts)
 
 
 main()
