@@ -19,13 +19,14 @@ steps:
   # 编译静态博客构建工具
   - nimble install -y nwt markdown
   - cd kun
-  - nim c -d:release build.nim
+  - mkdir -pv dist/
+  - nim c -d:release -o:dist/kun build.nim
 
 - name: publish
   image: plugins/github-release
   settings:
     api_key:
       from_secret: GITHUB_API_KEY
-    files: build
+    files: dist/*
   when:
     event: tag
