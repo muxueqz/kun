@@ -7,7 +7,9 @@ import markdown
 import algorithm
 import times
 
-var templates = newNwt("templates/*.templ") # we have all the templates in a folder called "templates"
+var
+  templates = newNwt("templates/*.templ") # we have all the templates in a folder called "templates"
+  site_root = "https://muxueqz.top"
 
 proc write_post(post: JsonNode)=
     var
@@ -25,6 +27,7 @@ proc write_post(post: JsonNode)=
         </a>
         """ % tag.strip()
         new_post["tag_links"].add p
+    new_post["root"] = "https://muxueqz.top"
     var json_post = %* new_post
     var content = templates.renderTemplate("post.templ", json_post)
     
@@ -137,7 +140,6 @@ proc write_rss(posts: seq[JsonNode]) =
     var
       seq_post : seq[string]
       p, summary: string
-      site_root = "https://muxueqz.coding.me"
 
     for key, post in posts:
       if "Summary" in post:
@@ -173,7 +175,6 @@ proc write_sitemap(posts: seq[JsonNode]) =
     var
       seq_post : seq[string]
       p: string
-      site_root = "https://muxueqz.coding.me"
 
   # <lastmod>$2</lastmod>
     for key, post in posts:
