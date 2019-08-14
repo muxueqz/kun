@@ -138,14 +138,16 @@ proc write_index(posts: seq[JsonNode]) =
 proc write_rss(posts: seq[JsonNode]) =
     var
       seq_post : seq[string]
-      p, summary: string
+      p, summary, post_dt: string
+      dt: DateTime
 
     for key, post in posts:
+      dt = parse(post["Date"].getStr, "yyyy-MM-dd HH:mm") - 8.hours
+      post_dt = format(dt, "ddd, dd MMM yyyy HH:mm:ss \'GMT\'")
       if "Summary" in post:
         summary = post["Summary"].getStr
       else:
         summary = ""
-    # <pubDate>{{ post.date.strftime("%a, %d %b %Y 12:00:00 Z") }}</pubDate>
       p = """
   <item>
     <title>$2</title>
@@ -156,7 +158,7 @@ proc write_rss(posts: seq[JsonNode]) =
     """ % [
           post["Slug"].getStr,
           post["Title"].getStr,
-          post["Date"].getStr,
+          post_dt,
           summary,
           site_root,
           ]
