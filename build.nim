@@ -5,7 +5,6 @@ import pegs
 import nwt, json
 import markdown
 import algorithm
-import times
 
 var
   templates = newNwt("templates/*.templ") # we have all the templates in a folder called "templates"
@@ -25,7 +24,7 @@ proc write_post(post: JsonNode)=
         <a class="label" href="/tags/$1.html">
         $1
         </a>
-        """ % tag.strip()
+        """ % tag
         new_post["tag_links"].add p
     new_post["root"] = "https://muxueqz.top"
     var json_post = %* new_post
@@ -118,7 +117,7 @@ proc write_index(posts: seq[JsonNode]) =
       seq_post.add p
       if "Tags" in post:
         for tag in post["Tags"].getStr.split(","):
-          tags.inc tag.strip()
+          tags.inc tag
 
     for tag, count in tags:
       p = """
@@ -170,6 +169,56 @@ proc write_rss(posts: seq[JsonNode]) =
     var content = templates.renderTemplate("rss.templ", index_post)
     
     writeFile("public/" & "feed.xml", content)
+
+proc write_atom(posts: seq[JsonNode]) =
+    var
+      seq_post : seq[string]
+      p, summary, post_dt: string
+      dt: DateTime
+
+    for key, post in posts:
+      dt = parse(post["Date"].getStr, "yyyy-MM-dd HH:mm")
+      post_dt = format(dt, "yyyy-MM-dd\'T\'HH:mm:sszzz")
+      if "Summary" in post:
+        summary = post["Summary"].getStr
+      else:
+        summary = ""
+      p = """
+  <entry>
+    <title>$2</title>
+    <link href="$5/$1.html" rel="alternate"></link>
+    <published>$3</published>
+    <updated>$3</updated>
+    <author><name>muxueqz</name></author>
+    <id>tag:muxueqz.top,$6:/$1.html</id>
+    <summary type="html">$4</summary>
+    """ % [
+          post["Slug"].getStr,
+          post["Title"].getStr,
+          post_dt,
+          summary,
+          site_root,
+          format(dt, "yyyy-MM-dd"),
+          ]
+      seq_post.add p
+      if "Tags" in post:
+        for tag in post["Tags"].getStr.split(","):
+          p = """
+          <category term="$1"></category>
+          """ % tag
+          seq_post.add p
+      seq_post.add "</entry>"
+
+    dt = parse(posts[0]["Date"].getStr, "yyyy-MM-dd HH:mm")
+    post_dt = format(dt, "yyyy-MM-dd\'T\'HH:mm:sszzz")
+    var index_post = %* {
+        "content": seq_post.join("\n"),
+        "root": site_root,
+        "updated": post_dt,
+      }
+    var content = templates.renderTemplate("atom.templ", index_post)
+    
+    writeFile("public/" & "all.atom.xml", content)
 
 proc write_sitemap(posts: seq[JsonNode]) =
     var
@@ -244,6 +293,7 @@ proc main()=
   # write_archive(posts)
   write_tags(posts)
   write_rss(posts)
+  write_atom(posts)
   write_sitemap(posts)
 
 
