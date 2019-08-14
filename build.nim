@@ -225,19 +225,21 @@ proc write_atom(posts: seq[JsonNode]) =
 proc write_sitemap(posts: seq[JsonNode]) =
     var
       seq_post : seq[string]
-      p: string
+      p, post_dt: string
+      dt: DateTime
 
-  # <lastmod>$2</lastmod>
     for key, post in posts:
+      dt = parse(post["Date"].getStr, "yyyy-MM-dd HH:mm")
+      post_dt = format(dt, "yyyy-MM-dd\'T\'HH:mm:sszzz")
       p = """
 <url>
   <loc>$3/$1.html</loc>
-  <lastmod>2019-08-09T22:48:11+00:00</lastmod>
+  <lastmod>$2</lastmod>
   <priority>1.00</priority>
 </url>
     """ % [
           post["Slug"].getStr,
-          post["Date"].getStr,
+          post_dt,
           site_root,
           ]
       seq_post.add p
