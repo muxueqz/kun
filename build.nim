@@ -2,12 +2,12 @@ import os, times, strutils, osproc, streams
 import tables
 import sequtils
 import pegs
-import nwt, json
+import json
 import markdown
 import algorithm
+import nimja/parser
 
 var
-  templates = newNwt("templates/*.templ") # we have all the templates in a folder called "templates"
   site_root = "https://muxueqz.top"
 
 proc write_post(post: JsonNode)=
@@ -28,9 +28,18 @@ proc write_post(post: JsonNode)=
         new_post["tag_links"].add p
     new_post["root"] = "https://muxueqz.top"
     var json_post = %* new_post
-    var content = templates.renderTemplate("post.templ", json_post)
+    var
+      Title = json_post["Title"].getStr
+      Tags = json_post.getOrDefault("Tags").getStr
+      Summary = json_post.getOrDefault("Summary").getStr
+      root = json_post.getOrDefault("root").getStr
+      Slug = json_post.getOrDefault("Slug").getStr
+      Date = json_post.getOrDefault("Date").getStr
+      tag_links = json_post.getOrDefault("tag_links").getStr
+      content = json_post["content"].getStr
+    var html_content = tmplf("post.templ", baseDir = getScriptDir() / "templates")
     
-    writeFile("public/" & post["Slug"].getStr & ".html", content)
+    writeFile("public/" & post["Slug"].getStr & ".html", html_content)
 
 proc md_processor(file_path: string): JsonNode = 
   var
@@ -131,9 +140,10 @@ proc write_index(posts: seq[JsonNode]) =
         "content": seq_post.join("\n"),
         "tags": tag_cloud,
       }
-    var content = templates.renderTemplate("index.templ", index_post)
+    var content= seq_post.join("\n")
+    var html_content = tmplf("index.templ", baseDir = getScriptDir() / "templates")
     
-    writeFile("public/" & "index.html", content)
+    writeFile("public/" & "index.html", html_content)
 
 proc write_rss(posts: seq[JsonNode]) =
     var
@@ -164,13 +174,10 @@ proc write_rss(posts: seq[JsonNode]) =
           ]
       seq_post.add p
 
-    var index_post = %* {
-        "content": seq_post.join("\n"),
-        "root": site_root,
-      }
-    var content = templates.renderTemplate("rss.templ", index_post)
+    var content= seq_post.join("\n")
+    var html_content = tmplf("rss.templ", baseDir = getScriptDir() / "templates")
     
-    writeFile("public/" & "feed.xml", content)
+    writeFile("public/" & "feed.xml", html_content)
 
 proc write_atom(posts: seq[JsonNode]) =
     var
@@ -213,14 +220,13 @@ proc write_atom(posts: seq[JsonNode]) =
 
     dt = parse(posts[0]["Date"].getStr, "yyyy-MM-dd HH:mm")
     post_dt = format(dt, "yyyy-MM-dd\'T\'HH:mm:sszzz")
-    var index_post = %* {
-        "content": seq_post.join("\n"),
-        "root": site_root,
-        "updated": post_dt,
-      }
-    var content = templates.renderTemplate("atom.templ", index_post)
+    var 
+        content = seq_post.join("\n")
+        root = site_root
+        updated = post_dt
+    var html_content = tmplf("atom.templ", baseDir = getScriptDir() / "templates")
     
-    writeFile("public/" & "all.atom.xml", content)
+    writeFile("public/" & "all.atom.xml", html_content)
 
 proc write_sitemap(posts: seq[JsonNode]) =
     var
@@ -244,13 +250,12 @@ proc write_sitemap(posts: seq[JsonNode]) =
           ]
       seq_post.add p
 
-    var index_post = %* {
-        "content": seq_post.join("\n"),
-        "root": site_root,
-      }
-    var content = templates.renderTemplate("sitemap.templ", index_post)
+    var 
+        content = seq_post.join("\n")
+        root = site_root
+    var html_content = tmplf("sitemap.templ", baseDir = getScriptDir() / "templates")
     
-    writeFile("public/" & "sitemap.xml", content)
+    writeFile("public/" & "sitemap.xml", html_content)
 
 proc write_tags(posts: seq[JsonNode]) =
     var
@@ -278,13 +283,12 @@ proc write_tags(posts: seq[JsonNode]) =
             post_tags[tag] = p
 
     for tag, post in post_tags:
-      var index_post = %* {
-          "content": post,
-          "tag_name": tag,
-        }
-      var content = templates.renderTemplate("tags.templ", index_post)
+      var 
+          content = post
+          tag_name = tag
+      var html_content = tmplf("tags.templ", baseDir = getScriptDir() / "templates")
       
-      writeFile("public/tags/" & tag & ".html", content)
+      writeFile("public/tags/" & tag & ".html", html_content)
 
 
 proc main()= 
