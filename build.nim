@@ -10,38 +10,38 @@ import nimja/parser
 var
   site_root = "https://muxueqz.top"
 
-proc write_post(post: JsonNode)=
-    var
-      p: string
-      new_post = initTable[string, string]()
-    new_post["Tags"] = ""
-    for k, v in post:
-      new_post[k] = v.getStr
-    new_post["tag_links"] = ""
-    if "Tags" in post:
-      for tag in post["Tags"].getStr.split(","):
-        p = """
+proc write_post(post: JsonNode) =
+  var
+    p: string
+    new_post = initTable[string, string]()
+  new_post["Tags"] = ""
+  for k, v in post:
+    new_post[k] = v.getStr
+  new_post["tag_links"] = ""
+  if "Tags" in post:
+    for tag in post["Tags"].getStr.split(","):
+      p = """
         <a class="label" href="/tags/$1.html">
         $1
         </a>
         """ % tag
-        new_post["tag_links"].add p
-    new_post["root"] = "https://muxueqz.top"
-    var json_post = %* new_post
-    var
-      Title = json_post["Title"].getStr
-      Tags = json_post.getOrDefault("Tags").getStr
-      Summary = json_post.getOrDefault("Summary").getStr
-      root = json_post.getOrDefault("root").getStr
-      Slug = json_post.getOrDefault("Slug").getStr
-      Date = json_post.getOrDefault("Date").getStr
-      tag_links = json_post.getOrDefault("tag_links").getStr
-      content = json_post["content"].getStr
-    var html_content = tmplf("post.templ", baseDir = getScriptDir() / "templates")
-    
-    writeFile("public/" & post["Slug"].getStr & ".html", html_content)
+      new_post["tag_links"].add p
+  new_post["root"] = "https://muxueqz.top"
+  var json_post = %* new_post
+  var
+    Title = json_post["Title"].getStr
+    Tags = json_post.getOrDefault("Tags").getStr
+    Summary = json_post.getOrDefault("Summary").getStr
+    root = json_post.getOrDefault("root").getStr
+    Slug = json_post.getOrDefault("Slug").getStr
+    Date = json_post.getOrDefault("Date").getStr
+    tag_links = json_post.getOrDefault("tag_links").getStr
+    content = json_post["content"].getStr
+  var html_content = tmplf("post.templ", baseDir = getScriptDir() / "templates")
 
-proc md_processor(file_path: string): JsonNode = 
+  writeFile("public/" & post["Slug"].getStr & ".html", html_content)
+
+proc md_processor(file_path: string): JsonNode =
   var
     file_meta = splitFile(file_path)
     head = true
@@ -75,7 +75,7 @@ proc md_processor(file_path: string): JsonNode =
   post["content"] = markdown(src)
   result = %* post
 
-proc write_posts(): seq[JsonNode] = 
+proc write_posts(): seq[JsonNode] =
   var
     post: JsonNode
   for file in walkDirRec "./srcs/":
@@ -91,23 +91,23 @@ proc date_cmp(x, y: JsonNode): int =
     b = parse(y["Date"].getStr, "yyyy-MM-dd HH:mm")
   if a < b: -1 else: 1
 
-proc sort_posts(posts: seq[JsonNode]): seq[JsonNode] = 
-    for post in posts:
-      result.add post
-    result.sort(date_cmp, order = SortOrder.Descending)
+proc sort_posts(posts: seq[JsonNode]): seq[JsonNode] =
+  for post in posts:
+    result.add post
+  result.sort(date_cmp, order = SortOrder.Descending)
 
 proc write_index(posts: seq[JsonNode]) =
-    var
-      seq_post : seq[string]
-      tags = initCountTable[string]()
-      p, summary, tag_cloud: string
+  var
+    seq_post: seq[string]
+    tags = initCountTable[string]()
+    p, summary, tag_cloud: string
 
-    for key, post in posts:
-      if "Summary" in post:
-        summary = post["Summary"].getStr
-      else:
-        summary = ""
-      p = """
+  for key, post in posts:
+    if "Summary" in post:
+      summary = post["Summary"].getStr
+    else:
+      summary = ""
+    p = """
     <h2>
       <a href="/$1.html"> $2 </a>
     </h2>
@@ -118,47 +118,42 @@ proc write_index(posts: seq[JsonNode]) =
     $4
     </div>
     """ % [
-          post["Slug"].getStr,
-          post["Title"].getStr,
-          post["Date"].getStr,
-          summary,
-          ]
-      seq_post.add p
-      if "Tags" in post:
-        for tag in post["Tags"].getStr.split(","):
-          tags.inc tag
+        post["Slug"].getStr,
+        post["Title"].getStr,
+        post["Date"].getStr,
+        summary,
+      ]
+    seq_post.add p
+    if "Tags" in post:
+      for tag in post["Tags"].getStr.split(","):
+        tags.inc tag
 
-    for tag, count in tags:
-      p = """
+  for tag, count in tags:
+    p = """
       <a class="label" href="/tags/$1.html">
       $1
       </a>
       """ % tag
-      tag_cloud.add p
+    tag_cloud.add p
 
-    var index_post = %* {
-        "content": seq_post.join("\n"),
-        "tags": tag_cloud,
-      }
-    var content= seq_post.join("\n")
-    var html_content = tmplf("index.templ", baseDir = getScriptDir() / "templates")
-    
-    writeFile("public/" & "index.html", html_content)
+  var content = seq_post.join("\n")
+  var html_content = tmplf("index.templ", baseDir = getScriptDir() / "templates")
+
+  writeFile("public/" & "index.html", html_content)
 
 proc write_rss(posts: seq[JsonNode]) =
-    var
-      seq_post : seq[string]
-      p, summary, post_dt: string
-      dt: DateTime
+  var
+    seq_post: seq[string]
+    p, summary, post_dt: string
+    dt: DateTime
 
-    for key, post in posts:
-      dt = parse(post["Date"].getStr, "yyyy-MM-dd HH:mm") - 8.hours
-      post_dt = format(dt, "ddd, dd MMM yyyy HH:mm:ss \'GMT\'")
-      if "Summary" in post:
-        summary = post["Summary"].getStr
-      else:
-        summary = ""
-      p = """
+  for key, post in posts:
+    dt = parse(post["Date"].getStr, "yyyy-MM-dd HH:mm") - 8.hours
+    post_dt = format(dt, "ddd, dd MMM yyyy HH:mm:ss \'GMT\'")
+    summary = ""
+    if "Summary" in post:
+      summary = post["Summary"].getStr
+    p = """
   <item>
     <title>$2</title>
     <link>$5/$1.html</link>
@@ -166,33 +161,32 @@ proc write_rss(posts: seq[JsonNode]) =
     <pubDate>$3</pubDate>
   </item>
     """ % [
-          post["Slug"].getStr,
-          post["Title"].getStr,
-          post_dt,
-          summary,
-          site_root,
-          ]
-      seq_post.add p
+        post["Slug"].getStr,
+        post["Title"].getStr,
+        post_dt,
+        summary,
+        site_root,
+      ]
+    seq_post.add p
 
-    var content= seq_post.join("\n")
-    var html_content = tmplf("rss.templ", baseDir = getScriptDir() / "templates")
-    
-    writeFile("public/" & "feed.xml", html_content)
+  var content = seq_post.join("\n")
+  var html_content = tmplf("rss.templ", baseDir = getScriptDir() / "templates")
+
+  writeFile("public/" & "feed.xml", html_content)
 
 proc write_atom(posts: seq[JsonNode]) =
-    var
-      seq_post : seq[string]
-      p, summary, post_dt: string
-      dt: DateTime
+  var
+    seq_post: seq[string]
+    p, summary, post_dt: string
+    dt: DateTime
 
-    for key, post in posts:
-      dt = parse(post["Date"].getStr, "yyyy-MM-dd HH:mm")
-      post_dt = format(dt, "yyyy-MM-dd\'T\'HH:mm:sszzz")
-      if "Summary" in post:
-        summary = post["Summary"].getStr
-      else:
-        summary = ""
-      p = """
+  for key, post in posts:
+    dt = parse(post["Date"].getStr, "yyyy-MM-dd HH:mm")
+    post_dt = format(dt, "yyyy-MM-dd\'T\'HH:mm:sszzz")
+    summary = ""
+    if "Summary" in post:
+      summary = post["Summary"].getStr
+    p = """
   <entry>
     <title>$2</title>
     <link href="$5/$1.html" rel="alternate"></link>
@@ -202,69 +196,69 @@ proc write_atom(posts: seq[JsonNode]) =
     <id>tag:muxueqz.top,$6:/$1.html</id>
     <summary type="html">$4</summary>
     """ % [
-          post["Slug"].getStr,
-          post["Title"].getStr,
-          post_dt,
-          summary,
-          site_root,
-          format(dt, "yyyy-MM-dd"),
-          ]
-      seq_post.add p
-      if "Tags" in post:
-        for tag in post["Tags"].getStr.split(","):
-          p = """
+        post["Slug"].getStr,
+        post["Title"].getStr,
+        post_dt,
+        summary,
+        site_root,
+        format(dt, "yyyy-MM-dd"),
+      ]
+    seq_post.add p
+    if "Tags" in post:
+      for tag in post["Tags"].getStr.split(","):
+        p = """
           <category term="$1"></category>
           """ % tag
-          seq_post.add p
-      seq_post.add "</entry>"
+        seq_post.add p
+    seq_post.add "</entry>"
 
-    dt = parse(posts[0]["Date"].getStr, "yyyy-MM-dd HH:mm")
-    post_dt = format(dt, "yyyy-MM-dd\'T\'HH:mm:sszzz")
-    var 
-        content = seq_post.join("\n")
-        root = site_root
-        updated = post_dt
-    var html_content = tmplf("atom.templ", baseDir = getScriptDir() / "templates")
-    
-    writeFile("public/" & "all.atom.xml", html_content)
+  dt = parse(posts[0]["Date"].getStr, "yyyy-MM-dd HH:mm")
+  post_dt = format(dt, "yyyy-MM-dd\'T\'HH:mm:sszzz")
+  var
+    content = seq_post.join("\n")
+    root = site_root
+    updated = post_dt
+  var html_content = tmplf("atom.templ", baseDir = getScriptDir() / "templates")
+
+  writeFile("public/" & "all.atom.xml", html_content)
 
 proc write_sitemap(posts: seq[JsonNode]) =
-    var
-      seq_post : seq[string]
-      p, post_dt: string
-      dt: DateTime
+  var
+    seq_post: seq[string]
+    p, post_dt: string
+    dt: DateTime
 
-    for key, post in posts:
-      dt = parse(post["Date"].getStr, "yyyy-MM-dd HH:mm")
-      post_dt = format(dt, "yyyy-MM-dd\'T\'HH:mm:sszzz")
-      p = """
+  for key, post in posts:
+    dt = parse(post["Date"].getStr, "yyyy-MM-dd HH:mm")
+    post_dt = format(dt, "yyyy-MM-dd\'T\'HH:mm:sszzz")
+    p = """
 <url>
   <loc>$3/$1.html</loc>
   <lastmod>$2</lastmod>
   <priority>1.00</priority>
 </url>
     """ % [
-          post["Slug"].getStr,
-          post_dt,
-          site_root,
-          ]
-      seq_post.add p
+        post["Slug"].getStr,
+        post_dt,
+        site_root,
+      ]
+    seq_post.add p
 
-    var 
-        content = seq_post.join("\n")
-        root = site_root
-    var html_content = tmplf("sitemap.templ", baseDir = getScriptDir() / "templates")
-    
-    writeFile("public/" & "sitemap.xml", html_content)
+  var
+    content = seq_post.join("\n")
+    root = site_root
+  var html_content = tmplf("sitemap.templ", baseDir = getScriptDir() / "templates")
+
+  writeFile("public/" & "sitemap.xml", html_content)
 
 proc write_tags(posts: seq[JsonNode]) =
-    var
-      post_tags = initTable[string, string]()
-      p: string
+  var
+    post_tags = initTable[string, string]()
+    p: string
 
-    for _, post in posts:
-      if "Tags" in post:
-        p = """
+  for _, post in posts:
+    if "Tags" in post:
+      p = """
           <h2>
             <a href="/$1.html"> $2 </a>
           </h2>
@@ -272,26 +266,26 @@ proc write_tags(posts: seq[JsonNode]) =
             <time>$3</time>
           </div>
           """ % [
-            post["Slug"].getStr,
-            post["Title"].getStr,
-            post["Date"].getStr,
-            ]
-        for tag in post["Tags"].getStr.split(","):
-          if tag in post_tags:
-            post_tags[tag].add p
-          else:
-            post_tags[tag] = p
+          post["Slug"].getStr,
+          post["Title"].getStr,
+          post["Date"].getStr,
+        ]
+      for tag in post["Tags"].getStr.split(","):
+        if tag in post_tags:
+          post_tags[tag].add p
+        else:
+          post_tags[tag] = p
 
-    for tag, post in post_tags:
-      var 
-          content = post
-          tag_name = tag
-      var html_content = tmplf("tags.templ", baseDir = getScriptDir() / "templates")
-      
-      writeFile("public/tags/" & tag & ".html", html_content)
+  for tag, post in post_tags:
+    var
+      content = post
+      tag_name = tag
+    var html_content = tmplf("tags.templ", baseDir = getScriptDir() / "templates")
+
+    writeFile("public/tags/" & tag & ".html", html_content)
 
 
-proc main()= 
+proc main() =
   var
     posts = write_posts()
   posts = sort_posts(posts)
