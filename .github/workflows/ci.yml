@@ -34,6 +34,8 @@ jobs:
           nim -v
           nimble refresh
           nimble install markdown nimja
+          mkdir dist/
+          nim c -d:release -o:dist/kun-${{ matrix.os }} build.nim
 
       - name: Install Nimble dependencies
         if: runner.os != 'Windows'
@@ -42,6 +44,7 @@ jobs:
           nimble install markdown nimja
 
       - name: Build the project
+        if: runner.os != 'Windows'
         run: |
           mkdir dist/
           nim c -d:release -o:dist/kun-${{ matrix.os }} build.nim
