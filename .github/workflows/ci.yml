@@ -55,6 +55,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: List Files
+        if: runner.os == 'Windows' # For Windows
+        run: |
+          dir
+          ls
+
       - name: Publish release on GitHub(Windows)
         if: runner.os == 'Windows'
         uses: softprops/action-gh-release@v2
