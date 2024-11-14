@@ -1,0 +1,42 @@
+name: CI Pipeline
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Install Nim and dependencies
+      uses: wkenney/nim-action@v1
+      with:
+        nim_version: '1.6.14'  # or your preferred Nim version
+
+    - name: Install Nimble dependencies
+      run: |
+        nimble install markdown nimja
+
+    - name: Build the project
+      run: |
+        cd kun
+        mkdir -pv dist/
+        nim c -d:release -o:dist/kun build.nim
+
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: kun-build
+        path: kun/dist/kun
+
+    - name: Publish release on GitHub
+      uses: softprops/action-gh-release@v1
+      with:
+        files: kun/dist/kun
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
