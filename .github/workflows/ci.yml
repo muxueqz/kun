@@ -26,10 +26,12 @@ jobs:
       - name: Install Nim and dependencies (Windows)
         if: runner.os == 'Windows' # For Windows
         run: |
+          echo "C:\msys64\mingw32\bin" >> $GITHUB_PATH
           choco install nim
           # Import chocolatey profile to refresh environment
           Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
           refreshenv
+          nim -v
 
       - name: Install Nimble dependencies
         run: |
