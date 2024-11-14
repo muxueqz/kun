@@ -32,8 +32,11 @@ jobs:
           Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
           refreshenv
           nim -v
+          nimble refresh
+          nimble install markdown nimja
 
       - name: Install Nimble dependencies
+        if: runner.os != 'Windows'
         run: |
           nimble refresh
           nimble install markdown nimja
