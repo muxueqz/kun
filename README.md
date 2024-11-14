@@ -1,5 +1,5 @@
 # Kun
-[![Build Status](https://cloud.drone.io/api/badges/muxueqz/kun/status.svg)](https://cloud.drone.io/muxueqz/kun)
+[![CI Pipeline](https://github.com/muxueqz/kun/actions/workflows/ci.yml/badge.svg)](https://github.com/muxueqz/kun/actions/workflows/ci.yml)
 
 a small static site generator
 
