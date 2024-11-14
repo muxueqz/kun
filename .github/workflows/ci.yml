@@ -33,7 +33,6 @@ jobs:
           nim -v
           nimble refresh
           nimble install markdown nimja
-          nim c -d:release -o:kun-${{ matrix.os }} build.nim
           mkdir dist/
           nim c -d:release -o:dist/kun-${{ matrix.os }} build.nim
 
@@ -50,30 +49,8 @@ jobs:
           nim c -d:release -o:dist/kun-${{ matrix.os }} build.nim
 
       - name: Publish release on GitHub
-        if: runner.os != 'Windows'
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/kun-${{ matrix.os }} # Include the OS in the artifact name
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: List Files
-        if: runner.os == 'Windows' # For Windows
-        run: |
-          dir
-          ls
-
-      - name: Publish release on GitHub(Windows)
-        if: runner.os == 'Windows'
-        uses: softprops/action-gh-release@v2
-        with:
-          files: kun-${{ matrix.os }}* # Include the OS in the artifact name
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Publish release on GitHub(Windows)
-        if: runner.os == 'Windows'
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/kun-${{ matrix.os }}* # Include the OS in the artifact name
+          files: dist/kun-*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
