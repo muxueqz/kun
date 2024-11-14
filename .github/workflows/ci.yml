@@ -11,7 +11,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Install Nim and dependencies
       uses: jiro4989/setup-nim-action@v2
@@ -20,6 +20,7 @@ jobs:
 
     - name: Install Nimble dependencies
       run: |
+        nimble refresh
         nimble install markdown nimja
 
     - name: Build the project
