@@ -25,7 +25,6 @@ jobs:
 
     - name: Build the project
       run: |
-        cd kun
         mkdir -pv dist/
         nim c -d:release -o:dist/kun build.nim
 
