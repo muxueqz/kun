@@ -3,51 +3,53 @@ name: CI Pipeline
 on:
   push:
     tags:
-      - '*'
+      - "*"
 
 jobs:
   build:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]  # Add Windows support
+        os: [ubuntu-latest, windows-latest] # Add Windows support
 
     runs-on: ${{ matrix.os }}
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Install Nim and dependencies
-      if: runner.os == 'Linux'  # For Ubuntu
-      uses: jiro4989/setup-nim-action@v2
-      with:
-        nim-version: '2.0.0' # default is 'stable'
+      - name: Install Nim and dependencies
+        if: runner.os == 'Linux' # For Ubuntu
+        uses: jiro4989/setup-nim-action@v2
+        with:
+          nim-version: "2.0.0" # default is 'stable'
 
-    - name: Install Nim and dependencies (Windows)
-      if: runner.os == 'Windows'  # For Windows
-      run: |
-        choco install nim
-        refreshenv
+      - name: Install Nim and dependencies (Windows)
+        if: runner.os == 'Windows' # For Windows
+        run: |
+          choco install nim
+          # Import chocolatey profile to refresh environment
+          Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
+          refreshenv
 
-    - name: Install Nimble dependencies
-      run: |
-        nimble refresh
-        nimble install markdown nimja
+      - name: Install Nimble dependencies
+        run: |
+          nimble refresh
+          nimble install markdown nimja
 
-    - name: Build the project
-      run: |
-        mkdir -pv dist/
-        nim c -d:release -o:dist/kun-${{ matrix.os }} build.nim
+      - name: Build the project
+        run: |
+          mkdir -pv dist/
+          nim c -d:release -o:dist/kun-${{ matrix.os }} build.nim
 
-    # - name: Upload build artifact
-    #   uses: actions/upload-artifact@v3
-    #   with:
-    #     name: kun-${{ matrix.os }}  # Include the OS in the artifact name
-    #     path: dist/kun
+      # - name: Upload build artifact
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: kun-${{ matrix.os }}  # Include the OS in the artifact name
+      #     path: dist/kun
 
-    - name: Publish release on GitHub
-      uses: softprops/action-gh-release@v2
-      with:
-        files: dist/kun-${{ matrix.os }}  # Include the OS in the artifact name
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish release on GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/kun-${{ matrix.os }} # Include the OS in the artifact name
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
