@@ -26,7 +26,6 @@ jobs:
       - name: Install Nim and dependencies (Windows)
         if: runner.os == 'Windows' # For Windows
         run: |
-          echo "C:\msys64\mingw32\bin" >> $GITHUB_PATH
           choco install nim
           # Import chocolatey profile to refresh environment
           Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
@@ -34,8 +33,7 @@ jobs:
           nim -v
           nimble refresh
           nimble install markdown nimja
-          mkdir dist/
-          nim c -d:release -o:dist/kun-${{ matrix.os }} build.nim
+          nim c -d:release -o:kun-${{ matrix.os }} build.nim
 
       - name: Install Nimble dependencies
         if: runner.os != 'Windows'
@@ -50,8 +48,17 @@ jobs:
           nim c -d:release -o:dist/kun-${{ matrix.os }} build.nim
 
       - name: Publish release on GitHub
+        if: runner.os != 'Windows'
         uses: softprops/action-gh-release@v2
         with:
           files: dist/kun-${{ matrix.os }} # Include the OS in the artifact name
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish release on GitHub(Windows)
+        if: runner.os == 'Windows'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: kun-${{ matrix.os }} # Include the OS in the artifact name
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
