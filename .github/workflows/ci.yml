@@ -43,14 +43,8 @@ jobs:
 
       - name: Build the project
         run: |
-          mkdir -pv dist/
+          mkdir dist/
           nim c -d:release -o:dist/kun-${{ matrix.os }} build.nim
-
-      # - name: Upload build artifact
-      #   uses: actions/upload-artifact@v3
-      #   with:
-      #     name: kun-${{ matrix.os }}  # Include the OS in the artifact name
-      #     path: dist/kun
 
       - name: Publish release on GitHub
         uses: softprops/action-gh-release@v2
