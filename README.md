@@ -9,7 +9,7 @@ Install the dependency and build Kun:
 
 ```bash
 nimble install -y
-nimble build
+nimble release
 ```
 
 The default command reads Markdown files from `srcs/`, renders templates from
