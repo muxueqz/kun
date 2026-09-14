@@ -16,7 +16,7 @@ jobs:
     - name: Install Nim and dependencies
       uses: jiro4989/setup-nim-action@v2
       with:
-        nim-version: '2.0.0' # default is 'stable'
+        nim-version: 'stable' # default is 'stable'
 
     - name: Install Nimble dependencies
       run: nimble install -y
