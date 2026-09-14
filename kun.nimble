@@ -1,8 +1,9 @@
-version       = "1.3.8"
+version       = "1.4.0"
 author        = "muxueqz"
 description   = "A small static site generator"
 license       = "MIT"
 srcDir        = "."
+bin           = @["kun"]
 
 requires "nim >= 2.0.0"
 requires "marvdown == 0.2.3"
