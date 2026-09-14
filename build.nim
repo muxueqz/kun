@@ -1,14 +1,16 @@
-import os, times, strutils, osproc, streams
+import os, times, strutils
 import tables
 import sequtils
 import pegs
 import json
-import markdown
 import algorithm
-import nimja/parser
+import marvdown
+import template_engine
+
 
 var
   site_root = "https://muxueqz.top"
+  templates = newTemplateEngine()
 
 proc write_post(post: JsonNode) =
   var
@@ -28,16 +30,7 @@ proc write_post(post: JsonNode) =
       new_post["tag_links"].add p
   new_post["root"] = "https://muxueqz.top"
   var json_post = %* new_post
-  var
-    Title = json_post["Title"].getStr
-    Tags = json_post.getOrDefault("Tags").getStr
-    Summary = json_post.getOrDefault("Summary").getStr
-    root = json_post.getOrDefault("root").getStr
-    Slug = json_post.getOrDefault("Slug").getStr
-    Date = json_post.getOrDefault("Date").getStr
-    tag_links = json_post.getOrDefault("tag_links").getStr
-    content = json_post["content"].getStr
-  var html_content = tmplf("post.templ", baseDir = getScriptDir() / "templates")
+  var html_content = templates.renderTemplate("post.templ", json_post)
 
   writeFile("public/" & post["Slug"].getStr & ".html", html_content)
 
@@ -72,7 +65,8 @@ proc md_processor(file_path: string): JsonNode =
       tags.inc tag.strip()
 
     post["Tags"] = toSeq(tags.keys()).join(",")
-  post["content"] = markdown(src)
+  # echo(src)
+  post["content"] = marvdown.toHtml(src)
   result = %* post
 
 proc write_posts(): seq[JsonNode] =
@@ -137,7 +131,11 @@ proc write_index(posts: seq[JsonNode]) =
     tag_cloud.add p
 
   var content = seq_post.join("\n")
-  var html_content = tmplf("index.templ", baseDir = getScriptDir() / "templates")
+  var index_post = %* {
+    "content": content,
+    "tags": tag_cloud,
+  }
+  var html_content = templates.renderTemplate("index.templ", index_post)
 
   writeFile("public/" & "index.html", html_content)
 
@@ -170,7 +168,11 @@ proc write_rss(posts: seq[JsonNode]) =
     seq_post.add p
 
   var content = seq_post.join("\n")
-  var html_content = tmplf("rss.templ", baseDir = getScriptDir() / "templates")
+  var rss_post = %* {
+    "content": content,
+    "site_root": site_root,
+  }
+  var html_content = templates.renderTemplate("rss.templ", rss_post)
 
   writeFile("public/" & "feed.xml", html_content)
 
@@ -218,7 +220,12 @@ proc write_atom(posts: seq[JsonNode]) =
     content = seq_post.join("\n")
     root = site_root
     updated = post_dt
-  var html_content = tmplf("atom.templ", baseDir = getScriptDir() / "templates")
+  var atom_post = %* {
+    "content": content,
+    "root": root,
+    "updated": updated,
+  }
+  var html_content = templates.renderTemplate("atom.templ", atom_post)
 
   writeFile("public/" & "all.atom.xml", html_content)
 
@@ -247,7 +254,11 @@ proc write_sitemap(posts: seq[JsonNode]) =
   var
     content = seq_post.join("\n")
     root = site_root
-  var html_content = tmplf("sitemap.templ", baseDir = getScriptDir() / "templates")
+  var sitemap_post = %* {
+    "content": content,
+    "root": root,
+  }
+  var html_content = templates.renderTemplate("sitemap.templ", sitemap_post)
 
   writeFile("public/" & "sitemap.xml", html_content)
 
@@ -277,10 +288,11 @@ proc write_tags(posts: seq[JsonNode]) =
           post_tags[tag] = p
 
   for tag, post in post_tags:
-    var
-      content = post
-      tag_name = tag
-    var html_content = tmplf("tags.templ", baseDir = getScriptDir() / "templates")
+    var tag_post = %* {
+      "content": post,
+      "tag_name": tag,
+    }
+    var html_content = templates.renderTemplate("tags.templ", tag_post)
 
     writeFile("public/tags/" & tag & ".html", html_content)
 

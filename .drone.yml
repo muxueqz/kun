@@ -17,7 +17,7 @@ steps:
   image: nimlang/nim
   commands:
   # 编译静态博客构建工具
-  - nimble install -y nwt markdown
+  - nimble install -y marvdown
   - cd kun
   - mkdir -pv dist/
   - nim c -d:release -o:dist/kun build.nim
