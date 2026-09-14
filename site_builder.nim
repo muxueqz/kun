@@ -1,6 +1,6 @@
-import std/[algorithm, json, os, sequtils, strutils, tables, times]
+import std/[algorithm, json, os, sequtils, strutils, tables, terminal, times]
 
-import marvdown
+import markdown
 import template_engine
 
 const
@@ -16,6 +16,7 @@ type
     outputDir*: string
     siteRoot*: string
     cleanOutput*: bool
+    progressEnabled: bool
 
   Post* = object
     metadata*: Table[string, string]
@@ -32,6 +33,13 @@ type
     relativePath: string
     content: string
 
+  ProgressReporter = object
+    total: int
+    completed: int
+    enabled: bool
+    interactive: bool
+    active: bool
+
 proc defaultBuildConfig*(): BuildConfig =
   BuildConfig(
     sourceDir: "srcs",
@@ -39,6 +47,7 @@ proc defaultBuildConfig*(): BuildConfig =
     outputDir: "public",
     siteRoot: DefaultSiteRoot,
     cleanOutput: false,
+    progressEnabled: true,
   )
 
 proc buildError(message: string): ref BuildError =
@@ -144,7 +153,7 @@ proc parsePost*(filePath: string): Post =
 
   result.author = if metadata.hasKey("Author"): metadata["Author"].strip else: ""
   result.summary = if metadata.hasKey("Summary"): metadata["Summary"].strip else: ""
-  result.content = marvdown.toHtml(source)
+  result.content = markdown(source)
 
 proc parsePosts(config: BuildConfig): seq[Post] =
   if not dirExists(config.sourceDir):
@@ -223,20 +232,76 @@ proc tagCloudHtml(posts: seq[Post]): string =
 proc renderFile(relativePath, content: string): GeneratedFile =
   GeneratedFile(relativePath: relativePath, content: content)
 
-proc generateFiles(config: BuildConfig; posts: seq[Post]): seq[GeneratedFile] =
+proc generatedFileCount(posts: seq[Post]): int =
+  var tags = initTable[string, bool]()
+  for post in posts:
+    for tag in post.tags:
+      tags[tag] = true
+  posts.len + tags.len + 5
+
+proc newProgressReporter(total: int; enabled: bool): ProgressReporter =
+  ProgressReporter(total: total, enabled: enabled,
+    interactive: enabled and stderr.isatty)
+
+proc showProgress(reporter: var ProgressReporter; path: string) =
+  let percent = if reporter.total > 0: reporter.completed * 100 div reporter.total else: 100
+  let message = "Building pages [" & $reporter.completed & "/" & $reporter.total & "] " &
+    $percent & "% - " & path
+  if reporter.interactive:
+    stderr.write('\r')
+    stderr.eraseLine()
+    stderr.write(message)
+    flushFile(stderr)
+  else:
+    stderr.writeLine(message)
+
+proc beginFile(reporter: var ProgressReporter; path: string) =
+  if not reporter.enabled:
+    return
+  reporter.active = true
+  if reporter.interactive:
+    let message = "Building pages [" & $reporter.completed & "/" & $reporter.total & "] - " & path
+    stderr.write('\r')
+    stderr.eraseLine()
+    stderr.write(message)
+    flushFile(stderr)
+
+proc completeFile(reporter: var ProgressReporter; path: string) =
+  if not reporter.enabled:
+    return
+  inc reporter.completed
+  reporter.showProgress(path)
+
+proc finish(reporter: var ProgressReporter; success: bool) =
+  if not reporter.enabled or not reporter.active:
+    return
+  if reporter.interactive:
+    stderr.write("\n")
+  elif success:
+    stderr.writeLine("Built " & $reporter.completed & " generated files.")
+  reporter.active = false
+
+proc renderTracked(reporter: var ProgressReporter; engine: TemplateEngine;
+                   relativePath, templateName: string; context: JsonNode): GeneratedFile =
+  reporter.beginFile(relativePath)
+  result = renderFile(relativePath, engine.renderTemplate(templateName, context))
+  reporter.completeFile(relativePath)
+
+proc generateFiles(config: BuildConfig; posts: seq[Post];
+                   reporter: var ProgressReporter): seq[GeneratedFile] =
   var engine = newTemplateEngine(config.templateDir)
   var orderedPosts = posts
   orderedPosts.sort(postDateCmp, order = SortOrder.Descending)
 
   for post in orderedPosts:
-    result.add renderFile(post.slug & ".html",
-      engine.renderTemplate("post.templ", htmlPostContext(post, config.siteRoot)))
+    result.add renderTracked(reporter, engine, post.slug & ".html", "post.templ",
+      htmlPostContext(post, config.siteRoot))
 
   let indexContext = %* {
     "content": indexPostHtml(orderedPosts),
     "tags": tagCloudHtml(orderedPosts),
   }
-  result.add renderFile("index.html", engine.renderTemplate("index.templ", indexContext))
+  result.add renderTracked(reporter, engine, "index.html", "index.templ", indexContext)
 
   var postsByTag = initTable[string, seq[Post]]()
   for post in orderedPosts:
@@ -259,8 +324,8 @@ proc generateFiles(config: BuildConfig; posts: seq[Post]): seq[GeneratedFile] =
       "content": tagContent.join("\n"),
       "tag_name": htmlEscape(tag),
     }
-    result.add renderFile("tags" / (tag & ".html"),
-      engine.renderTemplate("tags.templ", tagContext))
+    result.add renderTracked(reporter, engine, "tags" / (tag & ".html"),
+      "tags.templ", tagContext)
 
   var rssItems: seq[string]
   for post in orderedPosts:
@@ -275,10 +340,10 @@ proc generateFiles(config: BuildConfig; posts: seq[Post]): seq[GeneratedFile] =
   </item>
     """ % [xmlEscape(post.title), xmlEscape(link),
       xmlEscape(format(rssDate, "ddd, dd MMM yyyy HH:mm:ss \'GMT\'"))]
-  result.add renderFile("feed.xml", engine.renderTemplate("rss.templ", %* {
+  result.add renderTracked(reporter, engine, "feed.xml", "rss.templ", %* {
     "content": rssItems.join("\n"),
     "site_root": xmlEscape(config.siteRoot),
-  }))
+  })
 
   let atomUpdated = if orderedPosts.len > 0:
     format(orderedPosts[0].date, "yyyy-MM-dd\'T\'HH:mm:sszzz")
@@ -302,11 +367,11 @@ proc generateFiles(config: BuildConfig; posts: seq[Post]): seq[GeneratedFile] =
     for tag in post.tags:
       atomEntries.add "  <category term=\"" & xmlEscape(tag) & "\"></category>"
     atomEntries.add "</entry>"
-  result.add renderFile("all.atom.xml", engine.renderTemplate("atom.templ", %* {
+  result.add renderTracked(reporter, engine, "all.atom.xml", "atom.templ", %* {
     "content": atomEntries.join("\n"),
     "root": xmlEscape(config.siteRoot),
     "updated": xmlEscape(atomUpdated),
-  }))
+  })
 
   var sitemapEntries: seq[string]
   for post in orderedPosts:
@@ -318,10 +383,10 @@ proc generateFiles(config: BuildConfig; posts: seq[Post]): seq[GeneratedFile] =
 </url>
     """ % [xmlEscape(config.siteRoot), xmlEscape(post.slug),
       xmlEscape(format(post.date, "yyyy-MM-dd\'T\'HH:mm:sszzz"))]
-  result.add renderFile("sitemap.xml", engine.renderTemplate("sitemap.templ", %* {
+  result.add renderTracked(reporter, engine, "sitemap.xml", "sitemap.templ", %* {
     "content": sitemapEntries.join("\n"),
     "root": xmlEscape(config.siteRoot),
-  }))
+  })
 
 proc safeManifestPath(path: string): bool =
   let normalized = normalizedPath(path)
@@ -362,7 +427,10 @@ proc buildSite*(config: BuildConfig) =
   let posts = parsePosts(effective)
   var sortedPosts = posts
   sortedPosts.sort(postDateCmp, order = SortOrder.Descending)
-  let generated = generateFiles(effective, sortedPosts)
+  var reporter = newProgressReporter(generatedFileCount(sortedPosts), effective.progressEnabled)
+  var buildSucceeded = false
+  defer: reporter.finish(buildSucceeded)
+  let generated = generateFiles(effective, sortedPosts, reporter)
 
   createDir(effective.outputDir)
   createDir(effective.outputDir / "tags")
@@ -385,3 +453,6 @@ proc buildSite*(config: BuildConfig) =
   for path in currentManifest:
     manifest.add %path
   writeAtomically(effective.outputDir / ".kun-manifest.json", $manifest)
+  reporter.beginFile(".kun-manifest.json")
+  reporter.completeFile(".kun-manifest.json")
+  buildSucceeded = true

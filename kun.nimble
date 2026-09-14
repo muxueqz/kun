@@ -6,7 +6,7 @@ srcDir        = "."
 bin           = @["kun"]
 
 requires "nim >= 2.0.0"
-requires "marvdown == 0.2.3"
+requires "markdown"
 
 task test, "Run the test suite":
   exec "nim c -r --hints:off --path:. tests/test_site_builder.nim"

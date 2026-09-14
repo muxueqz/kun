@@ -1,1 +1,6 @@
 nimcache/
+srcs/
+public/
+dist/
+*.tmp
+tests/test_site_builder
