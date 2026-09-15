@@ -23,7 +23,8 @@ Directories and the site URL can be overridden from the command line:
 
 ```text
 kun --source-dir srcs --template-dir templates --output-dir public \
-    --site-root https://muxueqz.top
+    --site-root https://muxueqz.top \
+    --site-description "QingZhuo Blog，记录 Linux、Nim、开发与技术实践。"
 ```
 
 Use `--clean` to remove files recorded by the previous Kun generation while

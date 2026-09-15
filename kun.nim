@@ -10,6 +10,8 @@ proc usage() =
   echo "  --template-dir DIR   Template directory (default: templates)"
   echo "  --output-dir DIR     Output directory (default: public)"
   echo "  --site-root URL      Site root URL (default: https://muxueqz.top)"
+  echo "  --site-description TEXT"
+  echo "                       Site description (default: " & DefaultSiteDescription & ")"
   echo "  --clean              Remove files from the previous generated manifest"
   echo "  --help               Show this help"
 
@@ -43,6 +45,7 @@ proc main() =
       of "--template-dir": config.templateDir = optionValue(args, index, option, inlineValue)
       of "--output-dir": config.outputDir = optionValue(args, index, option, inlineValue)
       of "--site-root": config.siteRoot = optionValue(args, index, option, inlineValue)
+      of "--site-description": config.siteDescription = optionValue(args, index, option, inlineValue)
       else: raise newException(ValueError, "unknown option: " & option)
     else:
       raise newException(ValueError, "unexpected argument: " & argument)

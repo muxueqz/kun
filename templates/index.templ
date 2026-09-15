@@ -1,6 +1,7 @@
 {% extends "layout.templ" %}
 {% block meta_data %}
 <title>QingZhuo Blog</title>
+<meta name="description" content="{{Description}}">
 <meta property="og:title" content="QingZhuo Blog">
 {% endblock %}
 
@@ -13,9 +14,9 @@
 </nav>
 
         <div class="col-md">
-          <h1>Tags:</h1>
+          <h2>Tags:</h2>
           {{tags}}
-          <h1>BlogRoll:</h1>
+          <h2>BlogRoll:</h2>
           <a href="http://zhangwenli.com/blog/"><i class="fa fa-link" aria-hidden="true"></i> 羡辙杂俎 </a>
         </div>
 {% endblock %}

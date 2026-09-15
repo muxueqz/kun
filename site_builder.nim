@@ -1,4 +1,4 @@
-import std/[algorithm, json, os, sequtils, strutils, tables, terminal, times]
+import std/[algorithm, json, os, sequtils, strutils, tables, terminal, times, unicode]
 
 import markdown
 import template_engine
@@ -6,6 +6,8 @@ import template_engine
 const
   InputDateFormat* = "yyyy-MM-dd HH:mm"
   DefaultSiteRoot* = "https://muxueqz.top"
+  DefaultSiteDescription* = "QingZhuo Blog，记录 Linux、Nim、开发与技术实践。"
+  MaxMetaDescriptionRunes = 160
 
 type
   BuildError* = object of CatchableError
@@ -15,6 +17,7 @@ type
     templateDir*: string
     outputDir*: string
     siteRoot*: string
+    siteDescription*: string
     cleanOutput*: bool
     progressEnabled: bool
 
@@ -46,6 +49,7 @@ proc defaultBuildConfig*(): BuildConfig =
     templateDir: "templates",
     outputDir: "public",
     siteRoot: DefaultSiteRoot,
+    siteDescription: DefaultSiteDescription,
     cleanOutput: false,
     progressEnabled: true,
   )
@@ -69,6 +73,42 @@ proc htmlEscape*(value: string): string =
 
 proc xmlEscape(value: string): string =
   htmlEscape(value)
+
+proc decodeHtmlEntities(value: string): string =
+  result = value
+  result = result.replace("&nbsp;", " ")
+  result = result.replace("&quot;", "\"")
+  result = result.replace("&#39;", "'")
+  result = result.replace("&lt;", "<")
+  result = result.replace("&gt;", ">")
+  result = result.replace("&amp;", "&")
+
+proc plainText(value: string): string =
+  var inTag = false
+  for c in value:
+    if c == '<':
+      inTag = true
+    elif c == '>' and inTag:
+      inTag = false
+    elif not inTag:
+      result.add c
+  result = strutils.splitWhitespace(decodeHtmlEntities(result)).join(" ").strip
+  if runeLen(result) > MaxMetaDescriptionRunes:
+    result = result.runeSubStr(0, MaxMetaDescriptionRunes)
+
+proc demoteH1Headings(value: string): string =
+  var index = 0
+  while index < value.len:
+    if index + 3 <= value.len and value[index ..< index + 3] == "<h1" and
+        (index + 3 == value.len or value[index + 3] in {'>', ' ', '\t', '\n', '\r'}):
+      result.add "<h2"
+      index += 3
+    elif index + 5 <= value.len and value[index ..< index + 5] == "</h1>":
+      result.add "</h2>"
+      index += 5
+    else:
+      result.add value[index]
+      inc index
 
 proc isSafeComponent(value: string): bool =
   if value.len == 0 or value in [".", ".."]:
@@ -152,8 +192,11 @@ proc parsePost*(filePath: string): Post =
   result.tags.sort(system.cmp[string])
 
   result.author = if metadata.hasKey("Author"): metadata["Author"].strip else: ""
-  result.summary = if metadata.hasKey("Summary"): metadata["Summary"].strip else: ""
-  result.content = markdown(source)
+  result.content = demoteH1Headings(markdown(source))
+  result.summary = if metadata.hasKey("Summary") and metadata["Summary"].strip.len > 0:
+    metadata["Summary"].strip
+  else:
+    plainText(result.content)
 
 proc parsePosts(config: BuildConfig): seq[Post] =
   if not dirExists(config.sourceDir):
@@ -188,6 +231,7 @@ proc htmlPostContext(post: Post; siteRoot: string): JsonNode =
   context["Tags"] = htmlEscape(post.tags.join(","))
   context["Author"] = htmlEscape(post.author)
   context["Summary"] = htmlEscape(post.summary)
+  context["Description"] = htmlEscape(post.summary)
   context["content"] = post.content
   context["root"] = htmlEscape(siteRoot)
   context["tag_links"] = ""
@@ -300,6 +344,7 @@ proc generateFiles(config: BuildConfig; posts: seq[Post];
   let indexContext = %* {
     "content": indexPostHtml(orderedPosts),
     "tags": tagCloudHtml(orderedPosts),
+    "Description": htmlEscape(config.siteDescription),
   }
   result.add renderTracked(reporter, engine, "index.html", "index.templ", indexContext)
 
@@ -323,6 +368,7 @@ proc generateFiles(config: BuildConfig; posts: seq[Post];
     let tagContext = %* {
       "content": tagContent.join("\n"),
       "tag_name": htmlEscape(tag),
+      "Description": htmlEscape(config.siteDescription),
     }
     result.add renderTracked(reporter, engine, "tags" / (tag & ".html"),
       "tags.templ", tagContext)
@@ -423,6 +469,9 @@ proc buildSite*(config: BuildConfig) =
     effective.siteRoot.setLen(effective.siteRoot.len - 1)
   if effective.siteRoot.len == 0:
     raise buildError("site root cannot be empty")
+  effective.siteDescription = effective.siteDescription.strip
+  if effective.siteDescription.len == 0:
+    effective.siteDescription = DefaultSiteDescription
 
   let posts = parsePosts(effective)
   var sortedPosts = posts
